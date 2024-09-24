@@ -1,38 +1,52 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Expense from "./types/expense";
-import { useState, useEffect } from "react";
+import ExpenseModal from "./expenseModal/expenseModal";
 import "bulma/css/bulma.css";
 
 const Home = () => {
   const [week, setWeek] = useState<Expense[] | []>([]);
   const [dateState, setDateState] = useState<number>();
+  const [modalState, setModalState] = useState("modal");
+  const [spentState, setSpentState] = useState(0);
+  const [budgetState, setBudgetState] = useState(500);
+  const [extraState, setExtraState] = useState(0);
+  const [expenseState, setExpenseState] = useState<Expense>({
+    key: undefined,
+    spent: 0,
+    item: '',
+    vendor: ''
+  });
 
   useEffect(() => {
     getDateOfWednesday();
     const arr: Expense[] = [];
     const expense1: Expense = {
+      key: 0,
       item: "the best item",
       vendor: "a good vendor",
       spent: 3.5,
     };
     const expense2: Expense = {
+      key: 1,
       item: "an item",
       vendor: "a vendor",
       spent: 13.5,
     };
     const expense3: Expense = {
+      key: 2,
       item: "a mediocre item",
       vendor: "a decent vendor",
       spent: 3.75,
     };
     arr.push(expense1, expense2, expense3);
     setWeek([...arr]);
+    setSpentState(arr.reduce((parSum, a) => parSum + a.spent, 0));
   }, []);
 
   const getDateOfWednesday = () => {
     let day = new Date();
-    console.log("day: " + day);
     let lastWedDate;
     switch (day.getDay()) {
       case 0:
@@ -55,8 +69,9 @@ const Home = () => {
         break;
       case 6:
         lastWedDate = 3;
+      default:
+        lastWedDate = 0;
     }
-    console.log(lastWedDate);
     let lastWed = new Date().getDate() - lastWedDate;
     setDateState(lastWed);
   };
@@ -66,19 +81,47 @@ const Home = () => {
   };
 
   const addClicked = () => {
-    console.log("add clicked");
+    if (modalState === "modal") setModalState("modal is-active");
+    else setModalState("modal");
   };
 
-  const total = 2000;
+  const submitExpense = () => {
+    console.log('modalContent:')
+    console.log(expenseState);
+    setModalState("modal");
+  };
+
+  const deleteClicked = (key: Number) => {
+    console.log(key);
+  }
 
   return (
     <main className="body container">
+      <ExpenseModal
+        clicked={() => addClicked()}
+        modalState={modalState}
+        submitExpense={() => submitExpense()}
+        expenseState={expenseState}
+        setExpense={setExpenseState}
+      />
       <article className="Hero is-info">
         <section className="hero-body">
-          <h1 className="title has-text-black-ter">
+          <h2 className="title has-text-black-ter">
             Total spent since last Wednesday the {dateState}:
-          </h1>
-          <h2 className="subtitle has-text-black-ter">${total}</h2>
+          </h2>
+          <h3 className="subtitle has-text-black-ter">${spentState}</h3>
+          <h1 className="title has-text-black-ter">Weekly budget remaining:</h1>
+          <h3 className="subtitle has-text-black-ter">
+            ${budgetState - spentState}
+          </h3>
+          {extraState !== 0 && (
+            <React.Fragment>
+              <h1 className="title has-text-black-ter">
+                Extra money this week:
+              </h1>
+              <h3 className="subtitle has-text-black-ter">${extraState}</h3>
+            </React.Fragment>
+          )}
         </section>
       </article>
       <br></br>
@@ -123,10 +166,11 @@ const Home = () => {
           </tfoot>
           <tbody>
             {week.map((e) => (
-              <tr key={e.spent}>
+              <tr key={e.key}>
                 <th>${e.spent}</th>
                 <td>{e.item}</td>
                 <td>{e.vendor}</td>
+                <td onClick={() => deleteClicked(e.key)} className="modal-close is-large" aria-label="close"></td>
               </tr>
             ))}
           </tbody>
