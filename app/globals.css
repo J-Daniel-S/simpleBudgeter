@@ -25,6 +25,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+vh-100 {
+  min-height: 100vh;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

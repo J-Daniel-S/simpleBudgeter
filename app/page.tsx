@@ -6,21 +6,22 @@ import ExpenseModal from "./expenseModal/expenseModal";
 import "bulma/css/bulma.css";
 
 const Home = () => {
+  const voidExpense = {
+    key: undefined,
+    spent: 0,
+    item: '',
+    vendor: ''
+  };
   const [week, setWeek] = useState<Expense[] | []>([]);
   const [dateState, setDateState] = useState<number>();
   const [modalState, setModalState] = useState("modal");
   const [spentState, setSpentState] = useState(0);
   const [budgetState, setBudgetState] = useState(500);
-  const [extraState, setExtraState] = useState(0);
-  const [expenseState, setExpenseState] = useState<Expense>({
-    key: undefined,
-    spent: 0,
-    item: '',
-    vendor: ''
-  });
+  const [extraState, setExtraState] = useState(200);
+  const [expenseState, setExpenseState] = useState<Expense>(voidExpense);
+  const [init, setInit] = useState(true);
 
-  useEffect(() => {
-    getDateOfWednesday();
+  const initWeek = () => {
     const arr: Expense[] = [];
     const expense1: Expense = {
       key: 0,
@@ -42,8 +43,32 @@ const Home = () => {
     };
     arr.push(expense1, expense2, expense3);
     setWeek([...arr]);
-    setSpentState(arr.reduce((parSum, a) => parSum + a.spent, 0));
-  }, []);
+    setInit(false);
+  }
+
+  const getData = () => {
+    //TODO implement when firebase is setup
+  }
+
+  const postData = async () => {
+    const response = await fetch('https://postman-echo.com/post', 
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(week)
+      }).then(res => res.json());
+      console.log(response);
+  }
+
+  useEffect(() => {
+    getDateOfWednesday();
+    if (init)
+      initWeek();
+    setSpentState(week.reduce((parSum, a) => parSum + a.spent, 0));
+   }, [expenseState, init]);
 
   const getDateOfWednesday = () => {
     let day = new Date();
@@ -85,14 +110,31 @@ const Home = () => {
     else setModalState("modal");
   };
 
+  const uniqueKey = () => {
+    let newKey = week.length;
+    
+    while (week.some(exp => exp.key === newKey)) {
+      newKey++;
+    }
+
+    return newKey;
+  }
+
   const submitExpense = () => {
-    console.log('modalContent:')
-    console.log(expenseState);
+    let newExpense = expenseState;
+    let newKey = uniqueKey();
+    newExpense.key = newKey;
+    console.log(newExpense);
+    setWeek([...week, newExpense]);
     setModalState("modal");
+    setExpenseState(voidExpense);
+    postData();
   };
 
-  const deleteClicked = (key: Number) => {
-    console.log(key);
+  const deleteClicked = (key: Number)  => {
+    let arr = week;
+    // console.log(key);
+    setWeek(arr.filter(exp => exp.key !== key));
   }
 
   return (
@@ -112,14 +154,14 @@ const Home = () => {
           <h3 className="subtitle has-text-black-ter">${spentState}</h3>
           <h1 className="title has-text-black-ter">Weekly budget remaining:</h1>
           <h3 className="subtitle has-text-black-ter">
-            ${budgetState - spentState}
+            ${extraState - spentState > 0 ? budgetState : budgetState - (spentState - extraState)}
           </h3>
           {extraState !== 0 && (
             <React.Fragment>
               <h1 className="title has-text-black-ter">
                 Extra money this week:
               </h1>
-              <h3 className="subtitle has-text-black-ter">${extraState}</h3>
+              <h3 className="subtitle has-text-black-ter">${extraState - spentState > 0 ? extraState - spentState : 0}</h3>
             </React.Fragment>
           )}
         </section>
@@ -167,7 +209,7 @@ const Home = () => {
           <tbody>
             {week.map((e) => (
               <tr key={e.key}>
-                <th>${e.spent}</th>
+                <th>${e.spent.toFixed(2)}</th>
                 <td>{e.item}</td>
                 <td>{e.vendor}</td>
                 <td onClick={() => deleteClicked(e.key)} className="modal-close is-large" aria-label="close"></td>

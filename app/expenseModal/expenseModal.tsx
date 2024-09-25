@@ -16,19 +16,19 @@ const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
     let cost = Number(e.target.value);
     let expense: Expense = { ...props.expenseState, spent: cost };
     props.setExpense(expense);
-    console.log(props.expenseState);
+    // console.log(props.expenseState);
   };
 
   const changeItem = (e: React.ChangeEvent<HTMLInputElement>) => {
     let expense: Expense = { ...props.expenseState, item: e.target.value };
     props.setExpense(expense);
-    console.log(props.expenseState);
+    // console.log(props.expenseState);
   };
 
   const changeVendor = (e: React.ChangeEvent<HTMLInputElement>) => {
     let expense: Expense = { ...props.expenseState, vendor: e.target.value };
     props.setExpense(expense);
-    console.log(props.expenseState);
+    // console.log(props.expenseState);
   };
 
   return (
