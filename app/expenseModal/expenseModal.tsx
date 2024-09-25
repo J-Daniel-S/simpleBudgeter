@@ -9,6 +9,8 @@ interface ExpenseModalProps {
   submitExpense: () => void;
   expenseState: Expense;
   setExpense: (expense: Expense) => void;
+  normalSpend: boolean;
+  setNormalSpend: (n: boolean) => void;
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
@@ -31,6 +33,13 @@ const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
     // console.log(props.expenseState);
   };
 
+  const radioChanged = () => {
+    let normal = !props.normalSpend
+    props.setNormalSpend(normal);
+    let expense: Expense = { ...props.expenseState, normal: normal }
+    props.setExpense(expense);
+  }
+
   return (
     <main className={props.modalState}>
       <article className="modal-background">
@@ -41,8 +50,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
               <input
                 className="input"
                 type="number"
-                placeholder="$ a billion"
-                value={props.expenseState.spent || ''}
+                placeholder="$"
+                value={props.expenseState.spent || ""}
                 onChange={changePrice}
               />
             </div>
@@ -54,7 +63,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
               <input
                 className="input"
                 type="text"
-                value={props.expenseState.item || ''}
+                value={props.expenseState.item || ""}
                 onChange={changeItem}
               />
             </div>
@@ -65,11 +74,23 @@ const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
               <input
                 className="input"
                 type="text"
-                value={props.expenseState.vendor || '' }
+                value={props.expenseState.vendor || ""}
                 onChange={changeVendor}
               />
             </div>
           </div>
+          <br></br>
+          <div className="control">
+            <label className="radio">
+              <input type="radio" name="spendingCategory" checked={props.normalSpend} onChange={radioChanged} />
+              Normal spending
+            </label>
+            <label className="radio">
+              <input type="radio" name="spendingCategory" checked={!props.normalSpend} onChange={radioChanged} />
+              Extra
+            </label>
+          </div>
+          <br></br>
           <div className="control">
             <div
               className="button is-primary"
