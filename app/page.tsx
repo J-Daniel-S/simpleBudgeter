@@ -4,81 +4,77 @@ import React, { useState, useEffect } from "react";
 import Expense from "./types/expense";
 import ExpenseModal from "./expenseModal/expenseModal";
 import "bulma/css/bulma.css";
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, onValue, set } from "firebase/database";
+import { voidExpense, firebaseConfig } from "./utils/utils";
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 const Home = () => {
-  const voidExpense = {
-    key: undefined,
-    spent: 0,
-    item: "",
-    vendor: "",
-    normal: true,
-  };
   const [week, setWeek] = useState<Expense[] | []>([]);
   const [dateState, setDateState] = useState<number>();
   const [modalState, setModalState] = useState("modal");
   const [normalSpentState, setNormalSpent] = useState(0);
   const [extraSpentState, setExtraSpent] = useState(0);
-  const [budgetState, setBudgetState] = useState(500);
-  const [extraState, setExtraState] = useState(200);
+  const [budgetState, setBudgetState] = useState(0);
+  const [extraState, setExtraState] = useState(0);
   const [expenseState, setExpenseState] = useState<Expense>(voidExpense);
   const [init, setInit] = useState(true);
   const [normalSpend, setNormalSpend] = useState(true);
   const [deleteState, setDeleteState] = useState(false);
 
-  const initWeek = () => {
-    const arr: Expense[] = [];
-    const expense1: Expense = {
-      key: 0,
-      item: "the best item",
-      vendor: "a good vendor",
-      spent: 3.5,
-      normal: true,
-    };
-    const expense2: Expense = {
-      key: 1,
-      item: "an item",
-      vendor: "a vendor",
-      spent: 13.5,
-      normal: true,
-    };
-    const expense3: Expense = {
-      key: 2,
-      item: "a mediocre item",
-      vendor: "a decent vendor",
-      spent: 3.75,
-      normal: true,
-    };
-    arr.push(expense1, expense2, expense3);
-    setWeek([...arr]);
-    setInit(false);
+  const postData = async (data: Expense[], path: string) => {
+    const dbRef = ref(db, path);
+    set(dbRef, data);
+    setTimeout(() => setInit(true), 3000);
   };
 
-  const getData = () => {
-    //TODO implement when firebase is setup
+  const getData = async (): Promise<Expense[]> => {
+    return new Promise((r) => {
+      const weekDataRef = ref(db, "/week");
+      onValue(weekDataRef, (snapshot) => {
+        setWeek(snapshot.val());
+      });
+
+      const fundsDataRef = ref(db, "/funds");
+      onValue(fundsDataRef, (snapshot) => {
+        setBudgetState(snapshot.val().normal);
+        setExtraState(snapshot.val().extra);
+      });
+    });
   };
 
-  const postData = async () => {
-    const response = await fetch("https://postman-echo.com/post", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(week),
-    }).then((res) => res.json());
-    console.log(response);
-  };
-
-  useEffect(() => {
-    getDateOfWednesday();
-    if (init) initWeek();
+  const calculate = () => {
     let normal: Expense[] = [];
     let extra: Expense[] = [];
-    week.filter(e => e.normal).forEach(e => normal.push(e));
-    week.filter(e => !e.normal).forEach(e => extra.push(e));
+    week.filter((e) => e.normal).forEach((e) => normal.push(e));
+    week.filter((e) => !e.normal).forEach((e) => extra.push(e));
     setNormalSpent(normal.reduce((parSum, a) => parSum + a.spent, 0));
     setExtraSpent(extra.reduce((parSum, a) => parSum + a.spent, 0));
     setDeleteState(false);
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (week.length > 0) {
+        calculate();
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [week]);
+
+
+  useEffect(() => {
+      const initData = async () => {
+        const response = await getData();
+        // console.log(Array.isArray(response));
+      };
+      initData();
+        // week.forEach((e) => console.log(e));
+        getDateOfWednesday();
+    setInit(false);
   }, [expenseState, init, deleteState]);
 
   const getDateOfWednesday = () => {
@@ -127,26 +123,23 @@ const Home = () => {
   };
 
   const submitExpense = () => {
-    let newExpense = expenseState;
-    let newKey = uniqueKey();
-    newExpense.key = newKey;
-    // console.log(newExpense);
-    setWeek([...week, newExpense]);
-    setModalState("modal");
-    setExpenseState(voidExpense);
-    // postData();
+    if (expenseState.spent !== 0 && expenseState.item !== '' && expenseState.vendor !== '') {
+      let newExpense = expenseState;
+      let newKey = uniqueKey();
+      newExpense.key = newKey;
+      const data = [...week, newExpense];
+      setModalState("modal");
+      setExpenseState(voidExpense);
+      postData(data, '/week');
+    }
   };
 
-  const deleteClicked = (key: Number) => {
+  const deleteClicked = (key: Number | undefined ) => {
     setDeleteState(true);
     let arr = week;
-    // console.log(key);
-    setWeek(arr.filter((exp) => exp.key !== key));
+    const data = arr.filter((exp) => exp.key !== key);
+    postData(data, '/week');
   };
-
-  const lastWeekClicked = () => {
-    console.log('last week clicked');
-  }
 
   return (
     <main className="body container">
@@ -164,14 +157,17 @@ const Home = () => {
           <h2 className="title has-text-black-ter">
             Total spent since last Wednesday the {dateState}:
           </h2>
-          <h3 className="subtitle has-text-black-ter">${normalSpentState + extraSpentState}</h3>
+          <h3 className="subtitle has-text-black-ter">
+            ${normalSpentState + extraSpentState}
+          </h3>
           <h1 className="title has-text-black-ter">Weekly budget remaining:</h1>
           <h3 className="subtitle has-text-black-ter">
             $
-            {budgetState - normalSpentState > 0 && extraState - extraSpentState > 0
+            {budgetState - normalSpentState > 0 &&
+            extraState - extraSpentState > 0
               ? budgetState - normalSpentState
-              : budgetState - (normalSpentState + (extraSpentState - extraState))
-              }
+              : budgetState -
+                (normalSpentState + (extraSpentState - extraState))}
           </h3>
           {extraState !== 0 && (
             <React.Fragment>
@@ -192,13 +188,13 @@ const Home = () => {
       <article className="container">
         <div className="box has-background-primary">
           <section className="columns">
-            <div
+            {/* <div
               className="column is-2 button is-warning is-small"
               onClick={() => lastWeekClicked()}
             >
               See last week
             </div>
-            <hr></hr>
+            <hr></hr> */}
             <div
               className="column is-2 button is-warning"
               onClick={() => addClicked()}
@@ -233,7 +229,7 @@ const Home = () => {
           <tbody>
             {week.map((e) => (
               <tr key={e.key}>
-                <th>${e.spent.toFixed(2)}</th>
+                <th>${Number(e.spent).toFixed(2)}</th>
                 <td>{e.item}</td>
                 <td>{e.vendor}</td>
                 <td>{e.normal ? "Normal" : "Extra"}</td>

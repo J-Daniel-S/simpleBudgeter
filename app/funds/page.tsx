@@ -20,7 +20,12 @@ const Funds = () => {
     setStandardState(undefined);
     setExtraState(undefined);
     console.log(funds);
+    // TODO post to backend
   };
+
+  const clearExpenses = () => {
+    console.log('clear')
+  }
 
   return (
     <main className="has-background-primary-dark">
@@ -52,6 +57,13 @@ const Funds = () => {
       <section className="control">
         <div className="button is-primary" onClick={() => submitFunds()}>
           Submit
+        </div>
+      </section>
+      <hr></hr>
+      
+      <section className="control">
+        <div className="button is-secondary" onClick={() => clearExpenses()}>
+          Clear expenses
         </div>
       </section>
     </main>
