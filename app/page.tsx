@@ -53,27 +53,27 @@ const Home = () => {
     setNormalSpent(normal.reduce((parSum, a) => parSum + a.spent, 0));
     setExtraSpent(extra.reduce((parSum, a) => parSum + a.spent, 0));
     setDeleteState(false);
-  }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (week.length > 0) {
+      if (Array.isArray(week) && week.length > 0) {
         calculate();
+      } else {
+        setNormalSpent(0);
+        setExtraSpent(0);
       }
     }, 2000);
 
     return () => clearInterval(interval);
   }, [week]);
 
-
   useEffect(() => {
-      const initData = async () => {
-        const response = await getData();
-        // console.log(Array.isArray(response));
-      };
-      initData();
-        // week.forEach((e) => console.log(e));
-        getDateOfWednesday();
+    const initData = async () => {
+      const response = await getData();
+    };
+    initData();
+    getDateOfWednesday();
     setInit(false);
   }, [expenseState, init, deleteState]);
 
@@ -123,22 +123,29 @@ const Home = () => {
   };
 
   const submitExpense = () => {
-    if (expenseState.spent !== 0 && expenseState.item !== '' && expenseState.vendor !== '') {
+    if (
+      expenseState.spent !== 0 &&
+      expenseState.item !== "" &&
+      expenseState.vendor !== ""
+    ) {
       let newExpense = expenseState;
-      let newKey = uniqueKey();
+      let newKey = 0;
+      if (Array.isArray(week)) newKey = uniqueKey();
       newExpense.key = newKey;
-      const data = [...week, newExpense];
+      const data = [];
+      if (Array.isArray(week)) data.push(...week, newExpense);
+      else data.push(newExpense);
       setModalState("modal");
       setExpenseState(voidExpense);
-      postData(data, '/week');
+      postData(data, "/week");
     }
   };
 
-  const deleteClicked = (key: Number | undefined ) => {
+  const deleteClicked = (key: Number | undefined) => {
     setDeleteState(true);
     let arr = week;
     const data = arr.filter((exp) => exp.key !== key);
-    postData(data, '/week');
+    postData(data, "/week");
   };
 
   return (
@@ -158,16 +165,16 @@ const Home = () => {
             Total spent since last Wednesday the {dateState}:
           </h2>
           <h3 className="subtitle has-text-black-ter">
-            ${normalSpentState + extraSpentState}
+            ${Number(normalSpentState + extraSpentState).toFixed(2)}
           </h3>
           <h1 className="title has-text-black-ter">Weekly budget remaining:</h1>
           <h3 className="subtitle has-text-black-ter">
             $
             {budgetState - normalSpentState > 0 &&
             extraState - extraSpentState > 0
-              ? budgetState - normalSpentState
-              : budgetState -
-                (normalSpentState + (extraSpentState - extraState))}
+              ? Number(budgetState - normalSpentState).toFixed(2)
+              : Number(budgetState -
+                (normalSpentState + (extraSpentState - extraState))).toFixed(2)}
           </h3>
           {extraState !== 0 && (
             <React.Fragment>
@@ -177,7 +184,7 @@ const Home = () => {
               <h3 className="subtitle has-text-black-ter">
                 $
                 {extraState - extraSpentState > 0
-                  ? extraState - extraSpentState
+                  ? Number(extraState - extraSpentState).toFixed(2)
                   : 0}
               </h3>
             </React.Fragment>
@@ -206,7 +213,7 @@ const Home = () => {
       </article>
 
       <br></br>
-      <article className="box has-background-primary">
+      <article className="box has-background-primary table-container">
         <table className="table has-background-primary">
           <thead>
             <tr>
@@ -214,7 +221,7 @@ const Home = () => {
               <th>Item</th>
               <th>Vendor</th>
               <th>Category</th>
-              <th></th>
+              <th>{""}</th>
             </tr>
           </thead>
           <tfoot>
@@ -223,23 +230,24 @@ const Home = () => {
               <th>Item</th>
               <th>Vendor</th>
               <th>Category</th>
-              <th></th>
+              <th>{""}</th>
             </tr>
           </tfoot>
           <tbody>
-            {week.map((e) => (
-              <tr key={e.key}>
-                <th>${Number(e.spent).toFixed(2)}</th>
-                <td>{e.item}</td>
-                <td>{e.vendor}</td>
-                <td>{e.normal ? "Normal" : "Extra"}</td>
-                <td
-                  onClick={() => deleteClicked(e.key)}
-                  className="delete is-large"
-                  aria-label="close"
-                ></td>
-              </tr>
-            ))}
+            {Array.isArray(week) &&
+              week.map((e) => (
+                <tr key={e.key}>
+                  <th>${Number(e.spent).toFixed(2)}</th>
+                  <td>{e.item}</td>
+                  <td>{e.vendor}</td>
+                  <td>{e.normal ? "Normal" : "Extra"}</td>
+                  <td
+                    onClick={() => deleteClicked(e.key)}
+                    className="delete is-large"
+                    aria-label="close"
+                  ></td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </article>
