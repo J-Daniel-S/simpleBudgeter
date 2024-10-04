@@ -55,6 +55,13 @@ const Home = () => {
     setDeleteState(false);
   };
 
+  const checkDate = () => {
+    if (dateState < 1 && dateState !== undefined) {
+      let adjusted = dateState + 7;
+      setDateState(adjusted);
+    }
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (Array.isArray(week) && week.length > 0) {
@@ -104,6 +111,7 @@ const Home = () => {
       default:
         lastWedDate = 0;
     }
+    checkDate();
     let lastWed = new Date().getDate() - lastWedDate;
     setDateState(lastWed);
   };
@@ -173,8 +181,10 @@ const Home = () => {
             {budgetState - normalSpentState > 0 &&
             extraState - extraSpentState > 0
               ? Number(budgetState - normalSpentState).toFixed(2)
-              : Number(budgetState -
-                (normalSpentState + (extraSpentState - extraState))).toFixed(2)}
+              : Number(
+                  budgetState -
+                    (normalSpentState + (extraSpentState - extraState))
+                ).toFixed(2)}
           </h3>
           {extraState !== 0 && (
             <React.Fragment>

@@ -64,6 +64,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
                 className="input"
                 type="text"
                 value={props.expenseState.item || ""}
+                placeholder="item"
                 onChange={changeItem}
               />
             </div>
@@ -74,6 +75,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = (props) => {
               <input
                 className="input"
                 type="text"
+                placeholder="store"
                 value={props.expenseState.vendor || ""}
                 onChange={changeVendor}
               />
